@@ -1,53 +1,117 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-}
+@layer base {
+  :root {
+    --color-primary: #1a1a1a;
+    --color-secondary: #0a192f;
+    --color-accent: #d4af37;
+    --color-background: #ffffff;
+    --color-text: #333333;
+    --color-text-light: #666666;
+  }
 
-.cursor-follow {
-  pointer-events: none;
-  position: fixed;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: rgba(59, 130, 246, 0.5);
-  transform: translate(-50%, -50%);
-  transition: transform 0.1s ease;
-  z-index: 9999;
-  mix-blend-mode: difference;
-}
+  html {
+    @apply scroll-smooth;
+  }
 
-.hero-section {
-  position: relative;
-  height: 100vh;
-  width: 100%;
-  overflow: hidden;
-}
+  body {
+    @apply antialiased text-text bg-background;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
 
-.smooth-scroll {
-  scroll-behavior: smooth;
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-semibold tracking-tight;
+  }
+
+  p {
+    @apply leading-relaxed;
+  }
 }
 
 @layer components {
-  .btn-primary {
-    @apply px-6 py-3 bg-accent text-white rounded-md font-medium transition-all hover:bg-opacity-90;
-  }
-  
-  .section-padding {
-    @apply py-16 md:py-24;
-  }
-  
   .container-custom {
     @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
   }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-accent text-white rounded-md font-medium transition-all duration-300 hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-secondary text-white rounded-md font-medium transition-all duration-300 hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-secondary focus:ring-offset-2;
+  }
+
+  .section-padding {
+    @apply py-16 md:py-24;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent to-secondary;
+  }
+}
+
+/* Modern Animations */
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Cursor Effects - Desktop Only */
+@media (min-width: 1024px) {
+  .cursor-follow {
+    @apply pointer-events-none fixed w-8 h-8 rounded-full bg-accent/20 transform -translate-x-1/2 -translate-y-1/2 transition-transform duration-100 z-50 mix-blend-difference;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-300;
+  }
+
+  .hover-glow:hover {
+    @apply drop-shadow-[0_0_10px_rgba(212,175,55,0.5)];
+  }
+}
+
+/* Performance Optimizations */
+img {
+  content-visibility: auto;
+}
+
+.lazy-load {
+  @apply opacity-0 transition-opacity duration-300;
+}
+
+.lazy-load.loaded {
+  @apply opacity-100;
+}
+
+/* Modern Scrollbar */
+::-webkit-scrollbar {
+  @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-background;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-accent/30 rounded-full hover:bg-accent/50 transition-colors duration-300;
 }

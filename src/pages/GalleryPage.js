@@ -1,192 +1,272 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 
 const GalleryPage = () => {
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [galleryItems, setGalleryItems] = useState([]);
-  
-  // Mock gallery items - in a real app, these would come from an API
-  useEffect(() => {
-    const items = [
-      {
-        id: 1,
-        title: 'Modern Website Design',
-        category: 'web',
-        image: 'https://via.placeholder.com/600x400/3b82f6/ffffff?text=Modern+Website',
-      },
-      {
-        id: 2,
-        title: 'E-commerce Platform',
-        category: 'web',
-        image: 'https://via.placeholder.com/600x400/3b82f6/ffffff?text=E-commerce',
-      },
-      {
-        id: 3,
-        title: 'Brand Identity',
-        category: 'branding',
-        image: 'https://via.placeholder.com/600x400/3b82f6/ffffff?text=Brand+Identity',
-      },
-      {
-        id: 4,
-        title: 'Mobile App UI',
-        category: 'mobile',
-        image: 'https://via.placeholder.com/600x400/3b82f6/ffffff?text=Mobile+App',
-      },
-      {
-        id: 5,
-        title: 'Corporate Website',
-        category: 'web',
-        image: 'https://via.placeholder.com/600x400/3b82f6/ffffff?text=Corporate+Site',
-      },
-      {
-        id: 6,
-        title: 'Logo Design',
-        category: 'branding',
-        image: 'https://via.placeholder.com/600x400/3b82f6/ffffff?text=Logo+Design',
-      },
-      {
-        id: 7,
-        title: 'Social Media Campaign',
-        category: 'marketing',
-        image: 'https://via.placeholder.com/600x400/3b82f6/ffffff?text=Social+Media',
-      },
-      {
-        id: 8,
-        title: 'Product Photography',
-        category: 'photography',
-        image: 'https://via.placeholder.com/600x400/3b82f6/ffffff?text=Product+Photography',
-      },
-    ];
-    
-    setGalleryItems(items);
-  }, []);
-  
-  const filteredItems = selectedCategory === 'all' 
-    ? galleryItems 
-    : galleryItems.filter(item => item.category === selectedCategory);
-  
-  const categories = [
-    { id: 'all', name: 'All' },
-    { id: 'web', name: 'Web Design' },
-    { id: 'branding', name: 'Branding' },
-    { id: 'mobile', name: 'Mobile' },
-    { id: 'marketing', name: 'Marketing' },
-    { id: 'photography', name: 'Photography' },
+  const [viewMode, setViewMode] = useState('gallery'); // 'gallery' | 'list' | 'map'
+  const [filters, setFilters] = useState({
+    price: { min: 0, max: 10000000 },
+    beds: null,
+    baths: null,
+    location: null,
+    type: null
+  });
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+
+  // Sample data - replace with your actual listings data
+  const listings = [
+    {
+      id: 1,
+      title: 'Modern Waterfront Estate',
+      price: 2500000,
+      beds: 4,
+      baths: 3.5,
+      location: 'Miami Beach',
+      type: 'Single Family',
+      images: ['/listings/1-1.jpg', '/listings/1-2.jpg', '/listings/1-3.jpg'],
+      video: '/listings/1-preview.mp4',
+      description: 'Stunning waterfront property with panoramic ocean views'
+    },
+    // Add more listings...
   ];
-  
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
+
+  useEffect(() => {
+    const handleMouseMove = (e) => {
+      setCursorPosition({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  const handleFilterChange = (filter, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filter]: value
+    }));
   };
-  
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        duration: 0.5,
-      },
-    },
+
+  const filteredListings = listings.filter(listing => {
+    // Implement your filtering logic here
+    return true;
+  });
+
+  const ListingCard = ({ listing }) => {
+    const [isHovered, setIsHovered] = useState(false);
+    const [ref, inView] = useInView({
+      triggerOnce: true,
+      threshold: 0.1
+    });
+
+    return (
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, y: 20 }}
+        animate={inView ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.5 }}
+        className="relative overflow-hidden group"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div className="relative aspect-[4/3]">
+          <motion.img
+            src={listing.images[0]}
+            alt={listing.title}
+            className="w-full h-full object-cover"
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.3 }}
+          />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: isHovered ? 0.7 : 0 }}
+            className="absolute inset-0 bg-black"
+          />
+        </div>
+
+        <AnimatePresence>
+          {isHovered && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="absolute inset-0 flex flex-col justify-end p-6"
+            >
+              <motion.h3
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="text-2xl font-bold text-white mb-2"
+              >
+                {listing.title}
+              </motion.h3>
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-white mb-4"
+              >
+                ${listing.price.toLocaleString()}
+              </motion.p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="flex gap-4 text-white mb-4"
+              >
+                <span>{listing.beds} beds</span>
+                <span>{listing.baths} baths</span>
+              </motion.div>
+              <motion.button
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                onClick={() => setSelectedListing(listing)}
+                className="px-4 py-2 bg-white text-primary rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+              >
+                View Details
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-primary text-white pt-24 pb-16">
-      <div className="container-custom">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">Our Gallery</h1>
-          <p className="text-gray-300 max-w-2xl mx-auto">
-            Explore our portfolio of modern, fluid websites and digital projects that capture audience attention.
-          </p>
-        </motion.div>
-        
-        {/* Filter Categories */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="flex flex-wrap justify-center gap-4 mb-12"
-        >
-          {categories.map(category => (
+    <div className="min-h-screen bg-primary text-white">
+      {/* View Mode Toggle */}
+      <div className="fixed top-4 right-4 z-10">
+        <div className="flex gap-2 bg-primary/80 backdrop-blur-sm p-2 rounded-lg">
+          {['gallery', 'list', 'map'].map((mode) => (
             <button
-              key={category.id}
-              onClick={() => setSelectedCategory(category.id)}
-              className={`px-4 py-2 rounded-full transition-all ${
-                selectedCategory === category.id
-                  ? 'bg-accent text-white'
-                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                viewMode === mode ? 'bg-accent text-white' : 'text-gray-300 hover:text-white'
               }`}
             >
-              {category.name}
+              {mode.charAt(0).toUpperCase() + mode.slice(1)}
             </button>
           ))}
-        </motion.div>
-        
-        {/* Gallery Grid */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-        >
-          {filteredItems.map((item) => (
-            <GalleryItem key={item.id} item={item} variants={itemVariants} />
-          ))}
-        </motion.div>
+        </div>
       </div>
-    </div>
-  );
-};
 
-const GalleryItem = ({ item, variants }) => {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
-  
-  const [isHovered, setIsHovered] = useState(false);
-  
-  return (
-    <motion.div
-      ref={ref}
-      variants={variants}
-      className="relative overflow-hidden rounded-lg group"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="aspect-w-16 aspect-h-9 bg-gray-800 overflow-hidden">
-        <img 
-          src={item.image} 
-          alt={item.title} 
-          className="w-full h-full object-cover transition-transform duration-500 ease-out"
-          style={{
-            transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-          }}
-        />
-      </div>
-      
-      <motion.div 
-        className="absolute inset-0 bg-gradient-to-t from-primary/90 to-transparent p-6 flex flex-col justify-end"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: isHovered ? 1 : 0 }}
-        transition={{ duration: 0.3 }}
+      {/* Filters Button */}
+      <button
+        onClick={() => setShowFilters(!showFilters)}
+        className="fixed top-4 left-4 z-10 px-4 py-2 bg-primary/80 backdrop-blur-sm rounded-lg text-white hover:bg-primary/90 transition-colors"
       >
-        <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
-        <p className="text-gray-300 text-sm">{item.category}</p>
-        <button className="mt-4 text-accent hover:underline self-start">View Project</button>
+        Filters
+      </button>
+
+      {/* Filters Modal */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-20 flex items-center justify-center"
+            onClick={() => setShowFilters(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-primary p-8 rounded-lg max-w-md w-full mx-4"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 className="text-2xl font-bold mb-6">Filter Properties</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Price Range</label>
+                  <div className="flex gap-4">
+                    <input
+                      type="number"
+                      placeholder="Min"
+                      className="w-full p-2 bg-primary/50 border border-gray-700 rounded-lg"
+                      value={filters.price.min}
+                      onChange={(e) => handleFilterChange('price', { ...filters.price, min: e.target.value })}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Max"
+                      className="w-full p-2 bg-primary/50 border border-gray-700 rounded-lg"
+                      value={filters.price.max}
+                      onChange={(e) => handleFilterChange('price', { ...filters.price, max: e.target.value })}
+                    />
+                  </div>
+                </div>
+                {/* Add more filter inputs */}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
+      <div className="container-custom pt-20">
+        {viewMode === 'gallery' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredListings.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} />
+            ))}
+          </div>
+        )}
+
+        {viewMode === 'list' && (
+          <div className="space-y-4">
+            {filteredListings.map((listing) => (
+              <div key={listing.id} className="bg-primary/50 p-4 rounded-lg">
+                {/* List view layout */}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {viewMode === 'map' && (
+          <div className="h-[calc(100vh-5rem)]">
+            {/* Map view implementation */}
+          </div>
+        )}
+      </div>
+
+      {/* Listing Details Modal */}
+      <AnimatePresence>
+        {selectedListing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-30 flex items-center justify-center"
+            onClick={() => setSelectedListing(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-primary p-8 rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Listing details content */}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Cursor */}
+      <motion.div
+        className="fixed pointer-events-none z-50"
+        animate={{
+          x: cursorPosition.x - 16,
+          y: cursorPosition.y - 16,
+        }}
+        transition={{ type: "spring", damping: 20, stiffness: 200 }}
+      >
+        <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent backdrop-blur-sm" />
       </motion.div>
-    </motion.div>
+    </div>
   );
 };
 
