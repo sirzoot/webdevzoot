@@ -1,273 +1,133 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
+import FilterBar from '../components/FilterBar'; // Import FilterBar
+import './ListingsPage.css'; // CSS for styling
+import { addLog } from '../utils/inAppLogger'; // Import the logger
 
-const GalleryPage = () => {
-  const [viewMode, setViewMode] = useState('gallery'); // 'gallery' | 'list' | 'map'
-  const [filters, setFilters] = useState({
-    price: { min: 0, max: 10000000 },
-    beds: null,
-    baths: null,
-    location: null,
-    type: null
-  });
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedListing, setSelectedListing] = useState(null);
-  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+// Sample data for listings - in a real app, this would come from an API
+const initialListings = [
+  {
+    id: 1,
+    image: '/images/luxury_modern_house_lake.jpeg',
+    price: '$2,500,000',
+    priceValue: 2500000,
+    address: '123 Luxury Lane, Dream City, CA 90210',
+    beds: 4,
+    baths: 5,
+    sqft: '4,500 sqft',
+    type: 'Single Family',
+    status: 'For Sale'
+  },
+  {
+    id: 2,
+    image: '/images/contemporary_luxury_home_glass.jpeg',
+    price: '$1,800,000',
+    priceValue: 1800000,
+    address: '456 Opulence Avenue, Richville, CA 90211',
+    beds: 3,
+    baths: 3.5,
+    sqft: '3,200 sqft',
+    type: 'Condo',
+    status: 'For Sale'
+  },
+  {
+    id: 3,
+    image: '/images/illuminated_modern_home_evening.jpeg',
+    price: '$3,200,000',
+    priceValue: 3200000,
+    address: '789 Grand Boulevard, Elite Town, CA 90212',
+    beds: 5,
+    baths: 6,
+    sqft: '6,000 sqft',
+    type: 'Estate',
+    status: 'Pending'
+  },
+  {
+    id: 4,
+    image: '/images/exterior_contemporary_building.jpeg',
+    price: '$1,250,000',
+    priceValue: 1250000,
+    address: '101 Skyline Drive, Metro City, CA 90213',
+    beds: 2,
+    baths: 2,
+    sqft: '1,800 sqft',
+    type: 'Townhouse',
+    status: 'For Sale'
+  },
+  // Add more listings to showcase the gallery layout
+];
 
-  // Sample data - replace with your actual listings data
-  const listings = [
-    {
-      id: 1,
-      title: 'Modern Waterfront Estate',
-      price: 2500000,
-      beds: 4,
-      baths: 3.5,
-      location: 'Miami Beach',
-      type: 'Single Family',
-      images: ['/listings/1-1.jpg', '/listings/1-2.jpg', '/listings/1-3.jpg'],
-      video: '/listings/1-preview.mp4',
-      description: 'Stunning waterfront property with panoramic ocean views'
-    },
-    // Add more listings...
-  ];
-
+const ListingsPage = () => {
   useEffect(() => {
-    const handleMouseMove = (e) => {
-      setCursorPosition({ x: e.clientX, y: e.clientY });
+    addLog('ListingsPage: Mounted');
+    return () => {
+      addLog('ListingsPage: Unmounted');
     };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const handleFilterChange = (filter, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [filter]: value
-    }));
-  };
+  addLog('ListingsPage: Rendering');
+  const [listings, setListings] = useState(initialListings);
+  const [filteredListings, setFilteredListings] = useState(initialListings);
 
-  const filteredListings = listings.filter(listing => {
-    // Implement your filtering logic here
-    return true;
-  });
-
-  const ListingCard = ({ listing }) => {
-    const [isHovered, setIsHovered] = useState(false);
-    const [ref, inView] = useInView({
-      triggerOnce: true,
-      threshold: 0.1
+  const handleFilterChange = (filters) => {
+    addLog('ListingsPage: handleFilterChange called with filters: ' + JSON.stringify(filters));
+    let tempFilteredListings = initialListings.filter(listing => {
+      let match = true;
+      // Price Range Filter
+      if (filters.priceRange) {
+        const [minPrice, maxPrice] = filters.priceRange.split('-').map(p => p === '' || p === '+' ? Infinity : parseInt(p));
+        if (filters.priceRange.endsWith('+')) {
+          if (listing.priceValue < minPrice) match = false;
+        } else {
+          if (listing.priceValue < minPrice || listing.priceValue > maxPrice) match = false;
+        }
+      }
+      // Beds Filter
+      if (filters.beds && listing.beds < parseInt(filters.beds)) {
+        match = false;
+      }
+      // Baths Filter
+      if (filters.baths && listing.baths < parseInt(filters.baths)) {
+        match = false;
+      }
+      // Property Type Filter
+      if (filters.propertyType && listing.type !== filters.propertyType) {
+        match = false;
+      }
+      return match;
     });
-
-    return (
-      <motion.div
-        ref={ref}
-        initial={{ opacity: 0, y: 20 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.5 }}
-        className="relative overflow-hidden group"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className="relative aspect-[4/3]">
-          <motion.img
-            src={listing.images[0]}
-            alt={listing.title}
-            className="w-full h-full object-cover"
-            whileHover={{ scale: 1.05 }}
-            transition={{ duration: 0.3 }}
-          />
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: isHovered ? 0.7 : 0 }}
-            className="absolute inset-0 bg-black"
-          />
-        </div>
-
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="absolute inset-0 flex flex-col justify-end p-6"
-            >
-              <motion.h3
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="text-2xl font-bold text-white mb-2"
-              >
-                {listing.title}
-              </motion.h3>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="text-white mb-4"
-              >
-                ${listing.price.toLocaleString()}
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="flex gap-4 text-white mb-4"
-              >
-                <span>{listing.beds} beds</span>
-                <span>{listing.baths} baths</span>
-              </motion.div>
-              <motion.button
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                onClick={() => setSelectedListing(listing)}
-                className="px-4 py-2 bg-white text-primary rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-              >
-                View Details
-              </motion.button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-    );
+    setFilteredListings(tempFilteredListings);
   };
 
   return (
-    <div className="min-h-screen bg-primary text-white">
-      {/* View Mode Toggle */}
-      <div className="fixed top-4 right-4 z-10">
-        <div className="flex gap-2 bg-primary/80 backdrop-blur-sm p-2 rounded-lg">
-          {['gallery', 'list', 'map'].map((mode) => (
-            <button
-              key={mode}
-              onClick={() => setViewMode(mode)}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                viewMode === mode ? 'bg-accent text-white' : 'text-gray-300 hover:text-white'
-              }`}
-            >
-              {mode.charAt(0).toUpperCase() + mode.slice(1)}
-            </button>
-          ))}
-        </div>
+    <div className="listings-page">
+      <div className="page-header">
+        <h1>Our Exclusive Listings</h1>
+        <p>Discover your next dream home from our curated collection of luxury properties.</p>
       </div>
-
-      {/* Filters Button */}
-      <button
-        onClick={() => setShowFilters(!showFilters)}
-        className="fixed top-4 left-4 z-10 px-4 py-2 bg-primary/80 backdrop-blur-sm rounded-lg text-white hover:bg-primary/90 transition-colors"
-      >
-        Filters
-      </button>
-
-      {/* Filters Modal */}
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-20 flex items-center justify-center"
-            onClick={() => setShowFilters(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-primary p-8 rounded-lg max-w-md w-full mx-4"
-              onClick={e => e.stopPropagation()}
-            >
-              <h3 className="text-2xl font-bold mb-6">Filter Properties</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Price Range</label>
-                  <div className="flex gap-4">
-                    <input
-                      type="number"
-                      placeholder="Min"
-                      className="w-full p-2 bg-primary/50 border border-gray-700 rounded-lg"
-                      value={filters.price.min}
-                      onChange={(e) => handleFilterChange('price', { ...filters.price, min: e.target.value })}
-                    />
-                    <input
-                      type="number"
-                      placeholder="Max"
-                      className="w-full p-2 bg-primary/50 border border-gray-700 rounded-lg"
-                      value={filters.price.max}
-                      onChange={(e) => handleFilterChange('price', { ...filters.price, max: e.target.value })}
-                    />
+      <FilterBar onFilterChange={handleFilterChange} />
+      <div className="listings-gallery">
+        {filteredListings.length > 0 ? (
+          filteredListings.map(listing => (
+            <div key={listing.id} className="listing-card-gallery">
+              <div className="listing-image-container">
+                <img src={listing.image} alt={`Listing at ${listing.address}`} className="listing-image-gallery" />
+                <div className="listing-overlay">
+                  <div className="overlay-price">{listing.price}</div>
+                  <div className="overlay-details">
+                    {listing.beds} Beds | {listing.baths} Baths | {listing.sqft}
                   </div>
+                  <button className="overlay-cta">View Details</button>
                 </div>
-                {/* Add more filter inputs */}
               </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Main Content */}
-      <div className="container-custom pt-20">
-        {viewMode === 'gallery' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredListings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} />
-            ))}
-          </div>
-        )}
-
-        {viewMode === 'list' && (
-          <div className="space-y-4">
-            {filteredListings.map((listing) => (
-              <div key={listing.id} className="bg-primary/50 p-4 rounded-lg">
-                {/* List view layout */}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {viewMode === 'map' && (
-          <div className="h-[calc(100vh-5rem)]">
-            {/* Map view implementation */}
-          </div>
+            </div>
+          ))
+        ) : (
+          <p className="no-listings-message">No listings match your current filters. Try adjusting your search!</p>
         )}
       </div>
-
-      {/* Listing Details Modal */}
-      <AnimatePresence>
-        {selectedListing && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-30 flex items-center justify-center"
-            onClick={() => setSelectedListing(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-primary p-8 rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
-            >
-              {/* Listing details content */}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Custom Cursor */}
-      <motion.div
-        className="fixed pointer-events-none z-50"
-        animate={{
-          x: cursorPosition.x - 16,
-          y: cursorPosition.y - 16,
-        }}
-        transition={{ type: "spring", damping: 20, stiffness: 200 }}
-      >
-        <div className="w-8 h-8 rounded-full bg-accent/20 border border-accent backdrop-blur-sm" />
-      </motion.div>
     </div>
   );
 };
 
-export default GalleryPage;
+export default ListingsPage;
+
